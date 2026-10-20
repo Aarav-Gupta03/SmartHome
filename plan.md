@@ -195,9 +195,6 @@ T=+11s count=4 → auto-release fires ✅
 | Singleton Document Pattern | `home_status` — armed/away mode state |
 | Replica Set Topology Check | Startup check for change stream + transaction support |
 
-**Status: NOT STARTED**
-
-
 ---
 
 ## Explicitly out of scope (do not implement without a new discussion)
