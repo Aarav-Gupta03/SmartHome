@@ -166,7 +166,21 @@ public class DeviceSimulationService {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "Sensor " + lockId + " is rate-limited. Too many writes in the sliding window.");
         }
+        return writeLockDocument(lockId, locked, false);
+    }
 
+    /**
+     * System-initiated lock change (AWAY mode arming, system reset).
+     * Bypasses the rate limiter — bulk system actions must not trigger quarantine
+     * and must not be blocked by an existing quarantine on a sensor.
+     * Carries a 'systemInitiated' flag so the change stream does NOT raise
+     * an UNAUTHORIZED_UNLOCK alert for these programmatic state changes.
+     */
+    public Document setLockStateBypass(String lockId, boolean locked) {
+        return writeLockDocument(lockId, locked, true);
+    }
+
+    private Document writeLockDocument(String lockId, boolean locked, boolean systemInitiated) {
         // PHASE 1: every lock document now carries isExitRoute, since Phase 2's
         // fire-vs-intrusion logic needs it on the document itself (time-series
         // documents are immutable inserts, not updatable "current state" rows).
@@ -180,9 +194,15 @@ public class DeviceSimulationService {
                 .append("isExitRoute", isExitRoute)
                 .append("batteryLevel", batteryLevels.getOrDefault(lockId, DEFAULT_BATTERY_LEVEL));
 
+        if (systemInitiated) {
+            // Mark as system-initiated so the change stream skips unauthorized-unlock detection.
+            doc.append("lockdownTriggeredAt", Date.from(Instant.now()));
+        }
+
         sensorDataCollection.insertOne(doc);
         latestState.put(lockId, doc);
-        log.info("Manual lock event: {} -> locked={} (isExitRoute={})", lockId, locked, isExitRoute);
+        log.info("{} lock event: {} -> locked={} (isExitRoute={})",
+                systemInitiated ? "System" : "Manual", lockId, locked, isExitRoute);
         return doc;
     }
 

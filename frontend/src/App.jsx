@@ -122,6 +122,9 @@ export default function App() {
       // Show as a critical supplementary alert.
       setAlert({ sensorId: msg.lockId, eventType: 'EXIT_LOCK_FAILURE', message: msg.message })
       setAuditEntries(prev => [{ eventType: 'FAILED_TO_UNLOCK_EXIT', triggeringSensorId: msg.lockId, timestamp: new Date().toISOString() }, ...prev].slice(0, 20))
+    } else if (msg.type === 'LOCKDOWN_FAILED') {
+      // Transaction rolled back — tell the user so they know the lockdown did NOT take effect.
+      setAlert({ sensorId: 'SYSTEM', eventType: 'LOCKDOWN_FAILED', message: msg.message })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoom])

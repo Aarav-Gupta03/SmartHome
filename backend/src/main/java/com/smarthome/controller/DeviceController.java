@@ -111,9 +111,9 @@ public class DeviceController {
             simulationService.setDeviceBattery(roomId, 100.0);
             simulationService.setDevicePower(roomId, true);
         }
-        // Unlock all doors
+        // Unlock all doors — use bypass so reset works even if a lock sensor is quarantined
         for (String lockId : AppConfig.LOCK_SENSOR_IDS) {
-            simulationService.setLockState(lockId, false);
+            simulationService.setLockStateBypass(lockId, false);
             simulationService.setDeviceBattery(lockId, 100.0);
             simulationService.setDevicePower(lockId, true);
         }

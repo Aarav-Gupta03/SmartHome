@@ -59,29 +59,40 @@ public class SystemController {
     public Map<String, String> setMode(@RequestParam String mode) {
         MongoCollection<Document> homeStatus = database.getCollection(AppConfig.HOME_STATUS_COLLECTION);
         java.util.List<String> lockedInteriorDoors = new java.util.ArrayList<>();
+
         if ("AWAY".equals(mode)) {
-            lockedInteriorDoors = simulationService.getLockedInteriorDoors();
+            // Build the list of interior doors that will be locked when arming.
+            // Exit-route doors (isExitRoute=true) are intentionally NOT locked on arm —
+            // they must remain operable for emergency evacuation (same principle as fire logic).
+            for (String lockId : AppConfig.LOCK_SENSOR_IDS) {
+                if (!Boolean.TRUE.equals(AppConfig.LOCK_EXIT_ROUTES.get(lockId))) {
+                    lockedInteriorDoors.add(lockId);
+                }
+            }
         }
-        
-        homeStatus.updateOne(Filters.eq("_id", "singleton"), 
+
+        homeStatus.updateOne(Filters.eq("_id", "singleton"),
             Updates.combine(
                 Updates.set("mode", mode),
                 Updates.set("lockedInteriorDoors", lockedInteriorDoors)
             )
         );
-        
+
+        if ("AWAY".equals(mode)) {
+            // Only lock interior (non-exit-route) doors when arming.
+            // Exit-route doors remain in their current state — locking them would be a safety violation.
+            for (String lockId : AppConfig.LOCK_SENSOR_IDS) {
+                if (!Boolean.TRUE.equals(AppConfig.LOCK_EXIT_ROUTES.get(lockId))) {
+                    simulationService.setLockStateBypass(lockId, true);
+                }
+            }
+        }
+
         webSocketHandler.broadcast(new Document()
                 .append("type", "HOME_STATUS_CHANGED")
                 .append("mode", mode)
                 .toJson());
-                
-        if ("AWAY".equals(mode)) {
-            // Lock ALL doors when arming — interior doors must also be secured so any unlock triggers an alert.
-            for (String lockId : AppConfig.LOCK_SENSOR_IDS) {
-                simulationService.setLockState(lockId, true);
-            }
-        }
-                
+
         return Map.of("mode", mode);
     }
 }

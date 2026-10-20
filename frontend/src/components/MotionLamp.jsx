@@ -3,6 +3,7 @@ import AnimatedBattery from './AnimatedBattery'
 
 export default function MotionLamp({ motionId, label, reading, onTrigger, onSetPower, onSetBattery, isRateLimited, quarantineCount, onRelease }) {
   const [busy, setBusy] = useState(false)
+  const [triggerError, setTriggerError] = useState(null)
   const detected = reading?.motionDetected ?? false
 
   const batteryLevel = reading?.batteryLevel ?? 100
@@ -12,8 +13,13 @@ export default function MotionLamp({ motionId, label, reading, onTrigger, onSetP
 
   async function trigger(value) {
     setBusy(true)
+    setTriggerError(null)
     try {
       await onTrigger(motionId, value)
+    } catch (err) {
+      // Surface the error to the user — e.g. 429 rate-limited, or network error.
+      setTriggerError(err?.message || 'Trigger failed')
+      setTimeout(() => setTriggerError(null), 4000)
     } finally {
       setBusy(false)
     }
@@ -37,6 +43,12 @@ export default function MotionLamp({ motionId, label, reading, onTrigger, onSetP
         <button className="btn btn-ghost" disabled={busy || isBlocked} onClick={() => trigger(true)}>Trigger</button>
         <button className="btn btn-ghost" disabled={busy || isBlocked} onClick={() => trigger(false)}>Clear</button>
       </div>
+
+      {triggerError && (
+        <span className="trigger-error" style={{ color: 'var(--amber)', fontSize: '0.72rem', marginTop: '4px', display: 'block' }}>
+          ⚠ {triggerError}
+        </span>
+      )}
 
       {isRateLimited && (
         <button
