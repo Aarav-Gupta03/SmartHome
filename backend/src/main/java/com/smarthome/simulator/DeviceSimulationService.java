@@ -333,7 +333,7 @@ public class DeviceSimulationService {
                     currentBattery -= 0.5; // Drain battery
                     batteryLevels.put(sensorId, Math.max(0.0, currentBattery));
                 }
-                
+
                 if (currentBattery > 0) {
                     Document latest = latestState.get(sensorId);
                     if (latest != null) {

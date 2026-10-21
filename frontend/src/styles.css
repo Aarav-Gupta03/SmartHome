@@ -101,8 +101,32 @@ button:focus-visible, input:focus-visible, select:focus-visible, .rocker:focus-v
 
 .gauge-module { width: 100%; }
 
-.lamp { width: 9px; height: 9px; border-radius: 50%; background: #45484e; cursor: pointer; box-shadow: inset 0 0 2px rgba(0,0,0,0.6); }
-.lamp-on { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+.module-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lamp {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2a2c33;
+  border: 1.5px solid #4a4d59;
+  cursor: pointer;
+  box-shadow: inset 0 0 3px rgba(0,0,0,0.8);
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+.lamp-on {
+  background: #10b981;
+  border-color: #34d399;
+  box-shadow: 0 0 8px #10b981, 0 0 14px rgba(16, 185, 129, 0.45);
+}
+.lamp:hover {
+  transform: scale(1.2);
+}
 
 .dial { width: 100%; max-width: 180px; }
 .dial-track { fill: none; stroke: #33363b; stroke-width: 10; stroke-linecap: round; }

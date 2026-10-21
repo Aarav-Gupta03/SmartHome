@@ -32,8 +32,10 @@ public class RateLimiterService {
     }
 
     public boolean checkAndRecord(String sensorId, boolean isSafetyCritical) {
-        // Count FIRST — only insert if the sensor is under the limit (or if safety-critical).
-        long count = rateEventsCollection.countDocuments(Filters.eq("sensorId", sensorId));
+        Date windowStart = Date.from(Instant.now().minusSeconds(RATE_LIMIT_WINDOW_SECONDS));
+        long count = rateEventsCollection.countDocuments(
+                Filters.and(Filters.eq("sensorId", sensorId), Filters.gte("createdAt", windowStart))
+        );
         if (count >= RATE_LIMIT_MAX_EVENTS) {
             if (isSafetyCritical) {
                 // Safety override: allow the event through and record it.
@@ -67,8 +69,11 @@ public class RateLimiterService {
 
     @Scheduled(fixedDelay = 15000)
     public void autoReleaseCheck() {
+        Date windowStart = Date.from(Instant.now().minusSeconds(RATE_LIMIT_WINDOW_SECONDS));
         for (String sensorId : quarantinedSensors) {
-            long count = rateEventsCollection.countDocuments(Filters.eq("sensorId", sensorId));
+            long count = rateEventsCollection.countDocuments(
+                    Filters.and(Filters.eq("sensorId", sensorId), Filters.gte("createdAt", windowStart))
+            );
             // Release when count drops below the max (consistent with the >= check in checkAndRecord).
             if (count < RATE_LIMIT_MAX_EVENTS) {
                 quarantinedSensors.remove(sensorId);
